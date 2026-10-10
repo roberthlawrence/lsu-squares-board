@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LSU Squares</title>
+<meta name="theme-color" content="#1E1233" />
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css?v=1" />
+</head>
+<body>
+
+<div id="loadScreen" class="show" role="status" aria-label="Loading">
+  <div id="loadLogoWrap">
+    <img class="loadGhost" src="logo.png" alt="" />
+    <img class="loadFill" src="logo.png" alt="" />
+  </div>
+  <span id="loadText">LOADING</span>
+</div>
+
+<div id="bgWatermark" aria-hidden="true"></div>
+
+<header id="topBar">
+  <img id="topLogo" src="logo.png" alt="LSU Squares" />
+  <div id="brand">
+    <span id="brandKick">LSU SQUARES</span>
+    <span id="brandSeason">SQUARES</span>
+  </div>
+  <div id="topGameChip"></div>
+  <div id="userChip" class="hidden">
+    <span id="userChipName"></span>
+    <button id="switchUserBtn" class="linkBtn" type="button">switch</button>
+  </div>
+  <button id="adminLoginBtn" class="ghostBtn" type="button">Admin</button>
+</header>
+
+<!-- ============ WELCOME / IDENTITY ============ -->
+<section id="welcomePanel" class="panel hidden">
+  <div id="welcomeHead">
+    <img id="welcomeLogo" src="logo.png" alt="" />
+    <h1 class="displayHead">CLAIM YOUR<br/>SQUARES</h1>
+  </div>
+  <p id="welcomeBlurb" class="blurb"></p>
+  <div class="fieldStack" id="emailStep">
+    <div id="emailStepMsg" class="stepError hidden"></div>
+    <label for="wEmail">Email</label>
+    <input id="wEmail" type="email" autocomplete="email" placeholder="mike@lsu.edu" />
+    <button id="continueBtn" class="primaryBtn" type="button">Continue</button>
+    <p class="finePrint">Start with your email — if you've been here before, that's all you need. All your squares and winnings are tied to it.</p>
+  </div>
+  <div class="fieldStack hidden" id="nameStep">
+    <p class="blurb">Looks like you're new here — tell us who you are.</p>
+    <label for="wFirstName">First name</label>
+    <input id="wFirstName" type="text" autocomplete="given-name" placeholder="Mike" />
+    <label for="wLastName">Last name</label>
+    <input id="wLastName" type="text" autocomplete="family-name" placeholder="Tiger" />
+    <p class="finePrint">Your real name — not your square name. You'll pick square names when you claim.</p>
+    <label for="wEmailConfirm">Confirm your email</label>
+    <input id="wEmailConfirm" type="email" autocomplete="off" placeholder="Type your email again" />
+    <p class="finePrint">Type it again to make sure it's right — your squares and winnings follow this address all season.</p>
+    <button id="joinBtn" class="primaryBtn" type="button">Enter the board</button>
+  </div>
+</section>
+
+<!-- ============ MAIN APP ============ -->
+<main id="app" class="hidden">
+
+  <!-- Game selector -->
+  <nav id="gameTabs" aria-label="Games"></nav>
+
+  <!-- Live / game status strip -->
+  <section id="scoreStrip" class="hidden">
+    <div class="scoreTeam">
+      <span id="scoreTeamLabel" class="scoreLabel">LSU</span>
+      <span id="scoreTexas" class="scoreNum">0</span>
+    </div>
+    <div id="scoreMid">
+      <span id="scoreClock"></span>
+      <span id="scoreQtr"></span>
+    </div>
+    <div class="scoreTeam">
+      <span id="scoreOppLabel" class="scoreLabel">OPP</span>
+      <span id="scoreOpp" class="scoreNum">0</span>
+    </div>
+  </section>
+
+  <!-- Winner congratulations banner -->
+  <section id="winnerBanner" class="panel hidden"></section>
+
+  <!-- Board -->
+  <section id="boardSection">
+    <div id="periodStrip"></div>
+    <div id="boardMeta">
+      <span id="boardTitle"></span>
+      <span id="boardStatus"></span>
+    </div>
+    <div id="boardScroll">
+      <table id="board" aria-label="Squares board"></table>
+    </div>
+    <div id="boardLegend">
+      <span><i class="lg lgOpen"></i> Open</span>
+      <span><i class="lg lgTaken"></i> Taken</span>
+      <span><i class="lg lgMine"></i> Yours</span>
+      <span><i class="lg lgLive"></i> Leading now</span>
+      <span><i class="lg lgWin"></i> Winner</span>
+    </div>
+  </section>
+
+  <!-- My squares -->
+  <section id="myPanel" class="panel hidden">
+    <h2 class="sectionHead">Your squares</h2>
+    <div id="mySquaresList"></div>
+    <div id="myBalance"></div>
+    <div id="venmoBox"></div>
+  </section>
+
+  <!-- Winners ledger -->
+  <section id="winnersPanel" class="panel">
+    <h2 class="sectionHead">Winners ledger</h2>
+    <div id="winnersList"></div>
+  </section>
+
+  <!-- Pot tracker (admins only) -->
+  <section id="potPanel" class="panel hidden">
+    <h2 class="sectionHead">The pot</h2>
+    <div id="potBars"></div>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section id="adminPanel" class="panel hidden">
+    <h2 class="sectionHead">Admin — <span id="adminWho"></span> <span id="adminRole" class="roleBadge"></span></h2>
+
+    <div class="adminGroup" id="grpBoard">
+      <h3>Board</h3>
+      <div class="btnRow">
+        <button id="lockBtn" class="primaryBtn" type="button">Lock board</button>
+        <button id="unlockBtn" class="primaryBtn hidden" type="button">Unlock board</button>
+        <button id="clearBoardBtn" class="dangerBtn" type="button">Clear all squares (new season)</button>
+      </div>
+      <h4>Season archive</h4>
+      <p class="finePrint">Everything — squares, numbers, winners, payments in and out, profiles, and the audit log — in one file. Clearing a season downloads one automatically; restore puts a season back exactly as archived.</p>
+      <div class="btnRow">
+        <button id="archiveBtn" class="ghostBtn" type="button">Download season archive</button>
+        <button id="csvNowBtn" class="ghostBtn" type="button">Download current CSV</button>
+        <button id="restoreBtn" class="ghostBtn" type="button">Restore from file</button>
+        <input id="restoreFile" type="file" accept=".json,application/json" class="hidden" />
+        <button id="cloudArchivesBtn" class="ghostBtn" type="button">View saved archives</button>
+      </div>
+      <div id="cloudArchivesList"></div>
+    </div>
+
+    <div class="adminGroup" id="grpNumbers">
+      <h3>Numbers — <span id="drawGameName"></span></h3>
+      <p class="finePrint">Draw live (animated, crypto-random) or type them in manually. Lock when final so nothing gets fat-fingered.</p>
+      <div class="btnRow">
+        <button id="drawBtn" class="primaryBtn" type="button">Draw numbers</button>
+        <button id="redrawBtn" class="dangerBtn hidden" type="button">Re-draw</button>
+        <button id="lockNumbersBtn" class="ghostBtn hidden" type="button">Lock numbers</button>
+        <button id="unlockNumbersBtn" class="ghostBtn hidden" type="button">Unlock numbers</button>
+      </div>
+      <div id="manualNumbersBox">
+        <label for="manualTopDigits">Top axis digits (10, in order, e.g. 3 7 1 0 9 5 2 8 6 4)</label>
+        <input id="manualTopDigits" type="text" inputmode="numeric" placeholder="3 7 1 0 9 5 2 8 6 4" />
+        <label for="manualSideDigits">Side axis digits (10, in order)</label>
+        <input id="manualSideDigits" type="text" inputmode="numeric" placeholder="6 2 9 4 0 8 1 5 3 7" />
+        <div class="btnRow">
+          <button id="saveManualNumbersBtn" class="ghostBtn" type="button">Save manual numbers</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="adminGroup" id="grpScores">
+      <h3>Scores &amp; winners</h3>
+      <div class="fieldRow">
+        <label for="espnIdInput">ESPN game ID</label>
+        <input id="espnIdInput" type="text" inputmode="numeric" placeholder="auto" />
+        <button id="saveEspnIdBtn" class="ghostBtn" type="button">Save</button>
+        <button id="findEspnIdBtn" class="ghostBtn" type="button">Auto-find</button>
+      </div>
+      <p class="finePrint">Auto-find matches LSU games by date. For any other game (playoffs, neutral sites, random teams): open the game on espn.com and copy the number from the URL — it looks like <b>espn.com/college-football/game/_/gameId/<u>401628476</u></b>. Paste that number here and Save.</p>
+      <div class="btnRow">
+        <button id="pullScoresBtn" class="primaryBtn" type="button">Pull scores &amp; record winners</button>
+        <button id="copyAnnounceBtn" class="ghostBtn" type="button">Copy winners announcement</button>
+      </div>
+      <div id="pullResult" class="finePrint"></div>
+      <h4>Manual winner entry (backup if ESPN fails)</h4>
+      <div class="fieldRow">
+        <label for="manualPeriod">Period</label>
+        <select id="manualPeriod"></select>
+        <input id="manualTexScore" type="number" inputmode="numeric" placeholder="LSU/Home" />
+        <input id="manualOppScore" type="number" inputmode="numeric" placeholder="Opp/Away" />
+        <button id="manualWinnerBtn" class="ghostBtn" type="button">Record winner</button>
+      </div>
+      <p class="finePrint">Enter the score at the end of that period — the winning square is computed from the drawn numbers automatically.</p>
+    </div>
+
+    <div class="adminGroup" id="grpPayments">
+      <h3>Payments</h3>
+      <div id="payTableWrap"></div>
+      <h4>Winner payouts — all games <span id="unpaidBadge" class="payBadge proc hidden"></span></h4>
+      <div id="payoutsList"></div>
+    </div>
+
+    <div class="adminGroup" id="grpSeason">
+      <h3>Season setup</h3>
+      <button id="seasonToggleBtn" class="ghostBtn" type="button">Open season settings</button>
+      <div id="seasonForm" class="hidden">
+        <label for="cfgSport">Sport mode</label>
+        <select id="cfgSport">
+          <option value="cfb">LSU Football (real season — 4 quarters)</option>
+          <option value="soccer">Soccer test — FIFA World Cup (2 halves)</option>
+          <option value="mlb">Baseball test — Texas Rangers (first 4 innings)</option>
+        </select>
+        <label for="cfgSeasonName">Season name</label>
+        <input id="cfgSeasonName" type="text" />
+        <label for="cfgPrice">Price per square ($)</label>
+        <input id="cfgPrice" type="number" inputmode="numeric" />
+        <label for="cfgPayout">Payout per win ($)</label>
+        <input id="cfgPayout" type="number" inputmode="numeric" />
+        <label for="cfgAdmins">Power admin emails (comma-separated — full control)</label>
+        <input id="cfgAdmins" type="text" />
+        <label for="cfgPayAdmins">Payment admin emails (comma-separated — payments + square name/release only)</label>
+        <input id="cfgPayAdmins" type="text" />
+        <label for="cfgVenmo">Venmo lines (one per line: handle | note)</label>
+        <textarea id="cfgVenmo" rows="3"></textarea>
+        <label for="cfgSoundcloud">SoundCloud track URL (optional — shows a player on the site)</label>
+        <input id="cfgSoundcloud" type="text" placeholder="https://soundcloud.com/artist/track" />
+        <label for="cfgBlurb">Welcome blurb</label>
+        <textarea id="cfgBlurb" rows="3"></textarea>
+        <label for="cfgGameCount">Number of games</label>
+        <select id="cfgGameCount"></select>
+        <h4>Games</h4>
+        <div id="cfgGames"></div>
+        <div class="btnRow">
+          <button id="fetchScheduleBtn" class="ghostBtn" type="button">Fetch schedule from ESPN</button>
+        </div>
+        <div class="btnRow">
+          <button id="saveSeasonBtn" class="primaryBtn" type="button">Save season</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="adminGroup" id="grpAudit">
+      <h3>Audit log</h3>
+      <div class="btnRow">
+        <button id="auditRefreshBtn" class="ghostBtn" type="button">Load recent activity</button>
+        <button id="auditMoreBtn" class="ghostBtn hidden" type="button">Load more</button>
+        <button id="auditDownloadBtn" class="ghostBtn" type="button">Download full log (.txt)</button>
+      </div>
+      <div id="auditList"></div>
+    </div>
+  </section>
+
+  <section id="jukebox" class="panel hidden">
+    <h2 class="sectionHead">Tailgate anthem</h2>
+    <div id="jukeboxPlayer"></div>
+  </section>
+
+  <div id="adminToolsBar" class="hidden">
+    <button id="adminToolsBtn" class="ghostBtn" type="button">Show admin tools</button>
+  </div>
+
+  <footer id="foot">
+    <span id="footBrand">LSU Squares · Geaux Tigers 🐯</span>
+  </footer>
+</main>
+
+<!-- Claim / edit modal -->
+<div id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div id="modal">
+    <h2 id="modalTitle">Claim this square</h2>
+    <p id="modalSub" class="finePrint"></p>
+    <label for="sqNameInput">Square name (shows on the board)</label>
+    <input id="sqNameInput" type="text" maxlength="18" placeholder="Boudreaux" />
+    <p id="modalHelp" class="finePrint"></p>
+    <div id="modalBtns">
+      <button id="modalReleaseBtn" class="dangerBtn hidden" type="button">Release square</button>
+      <button id="modalCancelBtn" class="ghostBtn" type="button">Cancel</button>
+      <button id="modalSaveBtn" class="primaryBtn" type="button">Claim</button>
+    </div>
+  </div>
+</div>
+
+<div id="fileModalOverlay" role="dialog" aria-modal="true" aria-labelledby="fileModalTitle">
+  <div id="modalFile">
+    <h2 id="fileModalTitle">File ready</h2>
+    <p id="fileModalName" class="finePrint"></p>
+    <div id="fileModalBtns">
+      <button id="fileShareBtn" class="ghostBtn hidden" type="button">Share</button>
+      <a id="fileDownloadBtn" class="primaryBtn" download>Download</a>
+      <button id="fileCloseBtn" class="ghostBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="app.js?v=1"></script>
+</body>
+</html>

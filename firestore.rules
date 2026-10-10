@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function cfg() {
+      return get(/databases/$(database)/documents/config/current).data;
+    }
+    function isPowerAdmin() {
+      return request.auth != null
+        && 'email' in request.auth.token
+        && request.auth.token.email.lower() in cfg().adminEmails;
+    }
+    function isPaymentAdmin() {
+      return request.auth != null
+        && 'email' in request.auth.token
+        && request.auth.token.email.lower() in cfg().get('paymentAdminEmails', []);
+    }
+    function isAnyAdmin() {
+      return isPowerAdmin() || isPaymentAdmin();
+    }
+    function boardOpen() {
+      return cfg().boardLocked == false;
+    }
+
+    // ---- season config: public read, POWER admin write.
+    // Bootstrap: any Google-signed-in user may CREATE it once (first-run setup).
+    match /config/current {
+      allow read: if true;
+      allow create: if request.auth != null && 'email' in request.auth.token;
+      allow update, delete: if isPowerAdmin();
+    }
+
+    // ---- squares: public read; create when board open (anonymous sessions
+    // included — identity is email honor-system with double-entry at signup).
+    // Rename/release by the claiming device (uid) while open, or any admin.
+    match /squares/{squareId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && boardOpen()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.row is int
+        && request.resource.data.col is int
+        && request.resource.data.row >= 1 && request.resource.data.row <= 10
+        && request.resource.data.col >= 1 && request.resource.data.col <= 10
+        && squareId == string(request.resource.data.row) + '_' + string(request.resource.data.col)
+        && request.resource.data.squareName is string
+        && request.resource.data.squareName.size() >= 1
+        && request.resource.data.squareName.size() <= 18
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 1
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3;
+      allow update: if isAnyAdmin()
+        || (request.auth != null
+            && boardOpen()
+            && (resource.data.uid == request.auth.uid
+                || ('email' in request.auth.token
+                    && request.auth.token.email.lower() == resource.data.email))
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['squareName'])
+            && request.resource.data.squareName.size() >= 1
+            && request.resource.data.squareName.size() <= 18);
+      allow delete: if isAnyAdmin()
+        || (request.auth != null && boardOpen()
+            && (resource.data.uid == request.auth.uid
+                || ('email' in request.auth.token
+                    && request.auth.token.email.lower() == resource.data.email)));
+    }
+
+    // ---- profiles: canonical first/last name per email (+ mirrored payment
+    // total so players can see their own balance). Public read powers the
+    // email-first login greeting. Create at join (any session); updates by
+    // the device that created it or any admin.
+    match /profiles/{profileId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3;
+      allow update: if isAnyAdmin()
+        || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow delete: if isAnyAdmin();
+    }
+
+    // ---- games: public read (numbers + winners are public); POWER admin write.
+    match /games/{gameId} {
+      allow read: if true;
+      allow write: if isPowerAdmin();
+    }
+
+    // ---- payments: private, admin-only. Players see their received total
+    // via the mirrored field on their public profile instead.
+    match /payments/{payId} {
+      allow read, write: if isAnyAdmin();
+    }
+
+    // ---- payout confirmations: public read (winners see their status);
+    // power OR payment admins confirm/undo.
+    match /payouts/{payoutId} {
+      allow read: if true;
+      allow create, update: if isAnyAdmin()
+        && request.resource.data.paid is bool
+        && request.resource.data.email is string;
+      allow delete: if isAnyAdmin();
+    }
+
+    // ---- season archives: full past-season snapshots + CSV. Power only.
+    match /archives/{archiveId} {
+      allow read, write: if isPowerAdmin();
+    }
+
+    // ---- audit trail: append-only. Anyone signed in can log their own
+    // actions; only admins can read; nobody can edit or delete history.
+    match /audit/{entryId} {
+      allow read: if isAnyAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.action is string
+        && request.resource.data.actor is string;
+      allow update, delete: if false;
+    }
+  }
+}
